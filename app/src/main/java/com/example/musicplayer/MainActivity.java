@@ -5,10 +5,12 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -19,6 +21,8 @@ public class MainActivity extends AppCompatActivity {
 
     // Creating Binding Object
     private ActivityMainBinding binding;
+    private ActionBarDrawerToggle toggle;  // for nav drawer
+
     private static final int REQUEST_CODE_PERMISSION = 1;
 
     @Override
@@ -35,6 +39,16 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        // Initializing Nav Drawer Toggle
+        toggle = new ActionBarDrawerToggle(this, binding.getRoot(), R.string.open, R.string.close);
+        binding.getRoot().addDrawerListener(toggle);
+        toggle.syncState();
+
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
+
+        // Setting up button click listeners
         binding.shuffleBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -58,6 +72,26 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+
+        binding.navView.setNavigationItemSelectedListener(item -> {
+            switch (item.getItemId()) {
+                case R.id.navFeedback:
+                    Toast.makeText(getBaseContext(), "Feedback", Toast.LENGTH_SHORT).show();
+                    break;
+                case R.id.navSettings:
+                    Toast.makeText(getBaseContext(), "Settings", Toast.LENGTH_SHORT).show();
+                    break;
+                case R.id.navAbout:
+                    Toast.makeText(getBaseContext(), "About", Toast.LENGTH_SHORT).show();
+                    break;
+                case R.id.navExit:
+                    // Exit the app
+                    System.exit(1);
+                    break;
+            }
+            return true; // Ensuring that the listener returns true
+        });
+
     }
 
     // Requesting file permission at runtime
@@ -100,5 +134,13 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Permission to access music denied!", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (toggle.onOptionsItemSelected(item)) {
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }
