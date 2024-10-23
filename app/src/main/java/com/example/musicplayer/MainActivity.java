@@ -1,172 +1,104 @@
 package com.example.musicplayer;
 
-import androidx.annotation.NonNull;
-
-
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.DividerItemDecoration;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.storage.StorageManager;
-import android.os.storage.StorageVolume;
-import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
-import com.karumi.dexter.Dexter;
-import com.karumi.dexter.DexterBuilder;
-import com.karumi.dexter.PermissionToken;
-import com.karumi.dexter.listener.PermissionDeniedResponse;
-import com.karumi.dexter.listener.PermissionGrantedResponse;
-import com.karumi.dexter.listener.PermissionRequest;
-import com.karumi.dexter.listener.single.PermissionListener;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.example.musicplayer.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
-    private RecyclerView recyclerView;
-    //public static HashMap<String,String> mp;
-    public static ArrayList<File> Songs;
 
-    //Method that returns an ArrayList of Files whose name ends with .mp3 and does not start with a .
-    public static ArrayList<File> getSongs(File file){
-        ArrayList<File> ans = new ArrayList<>();
-        File[] listFiles = file.listFiles();
-        if(listFiles!=null){
-            for(File curr:listFiles){
-                if(!curr.isHidden() && curr.isDirectory()){
-                    ans.addAll(getSongs(curr));
-                }
-                else{
-                    if(curr.getName().endsWith(".mp3") && !curr.getName().startsWith(".")){
-                        ans.add(curr);
-                    }
-                }
-            }
-        }
-        return ans;
-    }
+    // Creating Binding Object
+    private ActivityMainBinding binding;
+    private static final int REQUEST_CODE_PERMISSION = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        recyclerView = findViewById(R.id.recyclerView);
 
-        //Permission from User for External Storage Read Access using Dexter Library
-        Dexter.withContext(this)
-                .withPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
-                .withListener(new PermissionListener() {
-                    //If Permission granted
+        // Requesting Runtime Permission
+        requestRuntimePermission();
 
+        // Set Theme
+        setTheme(R.style.Theme_MusicPlayer);
 
-                    @Override
-                    public void onPermissionGranted(PermissionGrantedResponse permissionGrantedResponse) {
+        // Initializing Binding
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
+        binding.shuffleBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(MainActivity.this, PlaySong.class);
+                startActivity(intent);
+            }
+        });
 
-//                        StorageManager storageManager = (StorageManager) getSystemService(STORAGE_SERVICE);
-//                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-//                            List<StorageVolume> volumes = storageManager.getStorageVolumes();
-//                            int i=0;
-//                            while(i<volumes.size()){
-//                                Log.d("MyLog",volumes.get(i).toString());
-//                                i++;
-//                            }
-//                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-//                                if (volumes.get(0).getDirectory()==Environment.getExternalStorageDirectory()){
-//                                    Log.d("MyLog","0Internal");
-//                                }
-//                                else{
-//                                    Log.d("MyLog","0External");
-//                                }
-//                            }
-//                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-//                                if (volumes.get(1).getDirectory()==Environment.getExternalStorageDirectory()){
-//                                    Log.d("MyLog","1Internal");
-//                                }
-//                                else{
-//                                    Log.d("MyLog","1External");
-//                                }
-//                            }
-//                        }
+        binding.favouriteBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(MainActivity.this, FavouriteActivity.class);
+                startActivity(intent);
+            }
+        });
 
-                        //StorageManager storageManager = (StorageManager)getSystemService(STORAGE_SERVICE);
-                        //List<StorageVolume> vol = storageManager.getStorageVolumes();
-
-
-
-                        //Getting a List of Songs in the form of a String
-                        //songs = getSongs(vol.get(1).getDirectory());
-                        Songs = getSongs(Environment.getExternalStorageDirectory());
-
-
-                        //Setting Recycler View
-                        LinearLayoutManager llm = new LinearLayoutManager(MainActivity.this);
-                        recyclerView.setLayoutManager(llm);
-                        CustomAdapter adapter = new CustomAdapter(Songs);
-                        recyclerView.setAdapter(adapter);
-                        DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(recyclerView.getContext(),
-                                llm.getOrientation());
-                        recyclerView.addItemDecoration(dividerItemDecoration);
-                        //recyclerView.se
-
-
-
-                    }
-
-                    //If Permission is not granted
-                    @Override
-                    public void onPermissionDenied(PermissionDeniedResponse permissionDeniedResponse) {
-                        Toast.makeText(MainActivity.this, "This Permission is required to proceed further", Toast.LENGTH_SHORT).show();
-                    }
-
-                    //Permission not granted and App reopened
-                    @Override
-                    public void onPermissionRationaleShouldBeShown(PermissionRequest permissionRequest, PermissionToken permissionToken) {
-                        permissionToken.continuePermissionRequest();
-                    }
-                })
-                .check();
+        binding.playlistBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(MainActivity.this, PlaylistActivity.class);
+                startActivity(intent);
+            }
+        });
     }
 
-
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-
+    // Requesting file permission at runtime
+    private void requestRuntimePermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S) {
+                // Requesting permission for Android 6 to Android 12 (API 23 to 32)
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this,
+                            new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                            REQUEST_CODE_PERMISSION);
+                } else {
+                    // Permission already granted
+                    Toast.makeText(this, "Permission to access music already granted!", Toast.LENGTH_SHORT).show();
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                // Requesting permission for Android 13 (API 33) and above to access audio files
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this,
+                            new String[]{Manifest.permission.READ_MEDIA_AUDIO},
+                            REQUEST_CODE_PERMISSION);
+                } else {
+                    // Permission already granted
+                    Toast.makeText(this, "Permission to access music already granted!", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
     }
 
+    // Handle the result of permission request
     @Override
-    protected void onResume() {
-        super.onResume();
-//        Intent backToMain = getIntent();
-//        int song_position = backToMain.getIntExtra("com.example.musicplayer.PlaySong.SongPosition", 0);
-    }
-
-    @Override
-    protected void onRestart() {
-        super.onRestart();
-    }
-
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_CODE_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Permission to access music granted!", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Permission to access music denied!", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 }
-
-
-
