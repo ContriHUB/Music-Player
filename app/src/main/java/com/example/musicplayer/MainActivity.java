@@ -1,12 +1,14 @@
 package com.example.musicplayer;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -14,14 +16,20 @@ import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.musicplayer.databinding.ActivityMainBinding;
+
+import java.io.File;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
     // Creating Binding Object
     private ActivityMainBinding binding;
     private ActionBarDrawerToggle toggle;  // for nav drawer
+    private MusicAdapter musicAdapter;
+    public static ArrayList<Music> MusicListMA;
 
     private static final int REQUEST_CODE_PERMISSION = 1;
 
@@ -29,48 +37,22 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Requesting Runtime Permission
-        requestRuntimePermission();
-
-        // Set Theme
-        setTheme(R.style.Theme_MusicPlayer);
-
-        // Initializing Binding
-        binding = ActivityMainBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
-
-        // Initializing Nav Drawer Toggle
-        toggle = new ActionBarDrawerToggle(this, binding.getRoot(), R.string.open, R.string.close);
-        binding.getRoot().addDrawerListener(toggle);
-        toggle.syncState();
-
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        }
+        initializeLayout();
 
         // Setting up button click listeners
-        binding.shuffleBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(MainActivity.this, PlaySong.class);
-                startActivity(intent);
-            }
+        binding.shuffleBtn.setOnClickListener(view -> {
+            Intent intent = new Intent(MainActivity.this, PlaySong.class);
+            startActivity(intent);
         });
 
-        binding.favouriteBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(MainActivity.this, FavouriteActivity.class);
-                startActivity(intent);
-            }
+        binding.favouriteBtn.setOnClickListener(view -> {
+            Intent intent = new Intent(MainActivity.this, FavouriteActivity.class);
+            startActivity(intent);
         });
 
-        binding.playlistBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(MainActivity.this, PlaylistActivity.class);
-                startActivity(intent);
-            }
+        binding.playlistBtn.setOnClickListener(view -> {
+            Intent intent = new Intent(MainActivity.this, PlaylistActivity.class);
+            startActivity(intent);
         });
 
         binding.navView.setNavigationItemSelectedListener(item -> {
@@ -89,9 +71,8 @@ public class MainActivity extends AppCompatActivity {
                     System.exit(1);
                     break;
             }
-            return true; // Ensuring that the listener returns true
+            return true;
         });
-
     }
 
     // Requesting file permission at runtime
@@ -142,5 +123,96 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void initializeLayout() {
+        // Requesting Runtime Permission
+        requestRuntimePermission();
+
+        // Set Theme
+        setTheme(R.style.coolPinkNav);
+
+        // Initializing Binding
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+
+        // Initializing Nav Drawer Toggle
+        toggle = new ActionBarDrawerToggle(this, binding.getRoot(), R.string.open, R.string.close);
+        binding.getRoot().addDrawerListener(toggle);
+        toggle.syncState();
+
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
+
+        // Creating MusicList
+        MusicListMA = getAllAudio();
+
+        // Setting up RecyclerView
+        binding.musicRV.setHasFixedSize(true);
+        binding.musicRV.setItemViewCacheSize(13);
+        binding.musicRV.setLayoutManager(new LinearLayoutManager(this));
+
+        // Initializing and setting adapter
+        musicAdapter = new MusicAdapter(this, MusicListMA);
+        binding.musicRV.setAdapter(musicAdapter);
+        binding.totalSongs.setText("Total Songs: " + musicAdapter.getItemCount());
+    }
+
+    @SuppressLint("Recycle")
+    private ArrayList<Music> getAllAudio() {
+        ArrayList<Music> tempList = new ArrayList<>();
+
+        // Filter only music or audio files
+        String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0";
+        String[] projection = {
+                MediaStore.Audio.Media._ID,
+                MediaStore.Audio.Media.TITLE,
+                MediaStore.Audio.Media.ALBUM,
+                MediaStore.Audio.Media.ARTIST,
+                MediaStore.Audio.Media.DURATION,
+                MediaStore.Audio.Media.DATE_ADDED,
+                MediaStore.Audio.Media.DATA,
+        };
+
+        Cursor cursor = this.getContentResolver().query(
+                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                projection,
+                selection,
+                null,
+                MediaStore.Audio.Media.DATE_ADDED
+        );
+
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                do {
+                    @SuppressLint("Range") String idC = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media._ID));
+                    @SuppressLint("Range") String titleC = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
+                    @SuppressLint("Range") String albumC = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
+                    @SuppressLint("Range") String artistC = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
+                    @SuppressLint("Range") String pathC = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
+                    @SuppressLint("Range") long durationC = cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.DURATION));
+
+
+                    if (durationC > 0) {
+                        Music music = new Music(
+                                idC != null ? idC : "Unknown",
+                                titleC != null ? titleC : "Unknown",
+                                albumC != null ? albumC : "Unknown",
+                                artistC != null ? artistC : "Unknown",
+                                pathC,
+                                durationC
+                        );
+
+                        File file = new File(pathC);
+                        if (file.exists()) {
+                            tempList.add(music);
+                        }
+                    }
+                } while (cursor.moveToNext());
+            }
+            cursor.close();
+        }
+        return tempList;
     }
 }
