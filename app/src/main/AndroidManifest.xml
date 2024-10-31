@@ -18,13 +18,11 @@
         android:theme="@style/Theme.MusicPlayer"
         tools:targetApi="31">
 
-        <!-- Music Service for background playback -->
         <service
             android:name=".MusicService"
             android:enabled="true"
             android:exported="true" />
 
-        <!-- Widget Provider registration -->
         <receiver
             android:name=".MusicWidgetProvider"
             android:exported="true">
