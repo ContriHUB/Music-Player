@@ -78,7 +78,7 @@ public class MusicService extends Service {
                 playSong();
             }
         }
-        return START_NOT_STICKY; // Ensures the service does not restart automatically
+        return START_NOT_STICKY; 
     }
 
 
@@ -136,7 +136,6 @@ public class MusicService extends Service {
         ComponentName widget = new ComponentName(this, MusicWidgetProvider.class);
         RemoteViews views = new RemoteViews(getPackageName(), R.layout.widget_layout);
 
-        // Set the icon based on the playback state
         views.setImageViewResource(R.id.btn_play_pause,
                 isPlaying ? R.drawable.ic_baseline_pause_24 : R.drawable.ic_baseline_play_arrow_24);
 
@@ -215,7 +214,7 @@ public class MusicService extends Service {
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {
-        stopSelf(); // Stop the service when the app is removed from the task list
+        stopSelf(); 
         super.onTaskRemoved(rootIntent);
     }
 
