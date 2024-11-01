@@ -4,12 +4,17 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.appwidget.AppWidgetManager;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
+import android.util.Log;
+import android.widget.RemoteViews;
+
 import androidx.core.app.NotificationCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.media.app.NotificationCompat.MediaStyle;
@@ -18,7 +23,6 @@ import java.io.File;
 import java.util.ArrayList;
 
 public class MusicService extends Service {
-
     private MediaPlayer mediaPlayer;
     private ArrayList<File> songList;
     private int currentPosition = 0;
@@ -32,6 +36,7 @@ public class MusicService extends Service {
     public static final String ACTION_PREVIOUS = "com.example.musicplayer.ACTION_PREVIOUS";
     public static final String ACTION_STATUS_CHANGED = "com.example.musicplayer.ACTION_STATUS_CHANGED";
     public static final String EXTRA_IS_PLAYING = "com.example.musicplayer.EXTRA_IS_PLAYING";
+    public static final String ACTION_WIDGET_UPDATE = "com.example.musicplayer.ACTION_WIDGET_UPDATE";
 
     public class MusicBinder extends Binder {
         public MusicService getService() {
@@ -49,6 +54,7 @@ public class MusicService extends Service {
     public IBinder onBind(Intent intent) {
         return binder;
     }
+
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -72,8 +78,9 @@ public class MusicService extends Service {
                 playSong();
             }
         }
-        return START_STICKY;
+        return START_NOT_STICKY; 
     }
+
 
     private void playSong() {
         if (mediaPlayer != null) {
@@ -86,9 +93,11 @@ public class MusicService extends Service {
             isPlaying = true;
             sendSongChangedBroadcast();
             showNotification();
+            updateWidgetPlayPauseStateDirectly();
         });
         mediaPlayer.setOnCompletionListener(mp -> playNext());
     }
+
 
     private void sendSongChangedBroadcast() {
         Intent intent = new Intent(ACTION_SONG_CHANGED);
@@ -102,6 +111,12 @@ public class MusicService extends Service {
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
+    private void updateWidgetPlayPauseState() {
+        Intent intent = new Intent(ACTION_WIDGET_UPDATE);
+        intent.putExtra(EXTRA_IS_PLAYING, isPlaying);
+        sendBroadcast(intent);
+    }
+
     public void pauseOrResume() {
         if (mediaPlayer != null) {
             if (isPlaying) {
@@ -113,8 +128,21 @@ public class MusicService extends Service {
             }
             sendStatusChangedBroadcast();
             showNotification();
+            updateWidgetPlayPauseStateDirectly();
         }
     }
+    private void updateWidgetPlayPauseStateDirectly() {
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
+        ComponentName widget = new ComponentName(this, MusicWidgetProvider.class);
+        RemoteViews views = new RemoteViews(getPackageName(), R.layout.widget_layout);
+
+        views.setImageViewResource(R.id.btn_play_pause,
+                isPlaying ? R.drawable.ic_baseline_pause_24 : R.drawable.ic_baseline_play_arrow_24);
+
+        appWidgetManager.updateAppWidget(widget, views);
+    }
+
+
 
     public void playNext() {
         if (currentPosition < songList.size() - 1) {
@@ -185,10 +213,19 @@ public class MusicService extends Service {
     }
 
     @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        stopSelf(); 
+        super.onTaskRemoved(rootIntent);
+    }
+
+    @Override
     public void onDestroy() {
-        super.onDestroy();
         if (mediaPlayer != null) {
             mediaPlayer.release();
+            mediaPlayer = null;
         }
+        stopForeground(true);
+        super.onDestroy();
     }
+
 }

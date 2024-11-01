@@ -1,0 +1,27 @@
+<!-- res/layout/widget_layout.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal">
+
+    <ImageButton
+        android:id="@+id/btn_previous"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_baseline_skip_previous_24"
+        android:contentDescription="Previous" />
+
+    <ImageButton
+        android:id="@+id/btn_play_pause"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_baseline_play_arrow_24"
+        android:contentDescription="Play/Pause" />
+
+    <ImageButton
+        android:id="@+id/btn_next"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_baseline_skip_next_24"
+        android:contentDescription="Next" />
+</LinearLayout>

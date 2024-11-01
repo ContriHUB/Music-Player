@@ -81,4 +81,3 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder
         return localdataset.size();
     }
 }
-
